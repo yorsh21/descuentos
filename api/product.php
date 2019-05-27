@@ -15,10 +15,17 @@
           $sql->bindValue(':id', $_GET['id']);
           $sql->execute();
           header("HTTP/1.1 200 OK");
-          echo json_encode(  $sql->fetch(PDO::FETCH_ASSOC)  );
+          echo json_encode($sql->fetch(PDO::FETCH_ASSOC));
           exit();
         }
-        else {
+        else 
+        {
+            //Cantidad total de elementos
+            $sql = $db->prepare("SELECT COUNT(*) as count FROM products");
+            $sql->execute();
+            $sql->setFetchMode(PDO::FETCH_ASSOC);
+            $total = $sql->fetchAll()[0]["count"];
+
             $adds = "";
 
             if (isset($_GET['discount'])) {
@@ -42,13 +49,20 @@
                 }
             }
 
-
             //Mostrar lista de productos
             $sql = $db->prepare("SELECT * FROM products" . $adds);
             $sql->execute();
             $sql->setFetchMode(PDO::FETCH_ASSOC);
             header("HTTP/1.1 200 OK");
-            echo json_encode( $sql->fetchAll()  );
+            $result = $sql->fetchAll();
+
+            $response = [
+                "total" => $total,
+                "count" => count($result),
+                "products" => $result
+            ];
+
+            echo json_encode($response);
             exit();
       }
     }
@@ -57,35 +71,69 @@
     if ($_SERVER['REQUEST_METHOD'] == 'POST')
     {
         $input = $_REQUEST;
-        $input['datetime'] = date('Y-m-d H:i:s');
 
-        $sql = "INSERT INTO products
-              (productName, productLink, productImage, productPercentage, previousPrice, offerPrice, datetime)
-              VALUES
-              (:productName, :productLink, :productImage, :productPercentage, :previousPrice, :offerPrice, :datetime)";
-        $statement = $db->prepare($sql);
-        bindAllValues($statement, $input);
-        $statement->execute();
-        $postId = $db->lastInsertId();
+        //Verifica si esta el producto
+        $sql = $db->prepare("SELECT COUNT(*) as count FROM products WHERE code=" . $input["code"]);
+        $sql->execute();
+        $sql->setFetchMode(PDO::FETCH_ASSOC);
 
-        if($postId)
+        if($sql->fetchAll()[0]["count"] == 0) 
         {
-            $input['id'] = $postId;
-            header("HTTP/1.1 200 OK");
-            echo json_encode($input);
-            exit();
-       }
+            $input['created_at'] = $input['datetime'];
+            $input['updated_at'] = $input['datetime'];
+            unset($input['datetime']);
+            print_r($input);
+
+            $sql = "INSERT INTO products
+               (code, name, url, image, discount, previous_price, offer_price, created_at, updated_at)
+               VALUES
+               (:code, :name, :url, :image, :discount, :previous_price, :offer_price, :created_at, :updated_at)";
+            $statement = $db->prepare($sql);
+            bindAllValues($statement, $input);
+            $statement->execute();
+            $postId = $db->lastInsertId();
+
+            if($postId)
+            {
+             $input['id'] = $postId;
+             header("HTTP/1.1 200 OK");
+             echo json_encode($input);
+             exit();
+            }
+        }
+        else 
+        {
+            $input['updated_at'] = $input['datetime'];
+            unset($input[array_search('datetime',$input)]);
+
+            $fields = getParams($input);
+            $sql = "
+                UPDATE products
+                SET $fields
+                WHERE code='" . $input["code"] . "'";
+            $statement = $db->prepare($sql);
+            bindAllValues($statement, $input);
+            $statement->execute();
+        }
     }
 
     //Borrar producto
     if ($_SERVER['REQUEST_METHOD'] == 'DELETE')
     {
-      $id = $_GET['id'];
-      $statement = $db->prepare("DELETE FROM products where id=:id");
-      $statement->bindValue(':id', $id);
-      $statement->execute();
-      header("HTTP/1.1 200 OK");
-      exit();
+        if (isset($_GET['id'])) {
+            $id = $_GET['id'];
+            $statement = $db->prepare("DELETE FROM products where id=:id");
+            $statement->bindValue(':id', $id);
+            $statement->execute();
+            header("HTTP/1.1 200 OK");
+            exit();
+        }
+        else if(isset($_GET['deleteallproducts'])) {
+            $statement = $db->prepare("DELETE FROM products; ALTER TABLE products AUTO_INCREMENT = 1;");
+            $statement->execute();
+            header("HTTP/1.1 200 OK");
+            exit();
+        }
     }
 
     //Actualizar producto
@@ -95,10 +143,10 @@
         $postId = $input['id'];
         $fields = getParams($input);
         $sql = "
-              UPDATE products
-              SET $fields
-              WHERE id='$postId'
-               ";
+            UPDATE products
+            SET $fields
+            WHERE id='$postId'
+        ";
         $statement = $db->prepare($sql);
         bindAllValues($statement, $input);
         $statement->execute();

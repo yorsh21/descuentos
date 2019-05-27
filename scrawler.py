@@ -2,8 +2,10 @@ from bs4 import BeautifulSoup
 import requests
 import sys
 import json
+import datetime
 
 def storeProduct(data):
+    #URL = "https://descuentos.insive.cl/api/product"
     URL = "http://localhost/descuentos/api/product.php"
   
     # defining a params dict for the parameters to be sent to the API 
@@ -31,12 +33,14 @@ def searchOffer(pageNumber):
             percentageValue = int(item.text[percentageIndex-4:percentageIndex])
             
             data = {}
-            data['productName'] = item.find('div', attrs = {'class': 'name'}).text
-            data['productLink'] = 'http://www.spdigital.cl' + item.find('a').get('href')
-            data['productImage'] = item.find('img', attrs = {'class': 'small-image'}).get('src')
-            data['productPercentage'] = str(percentageValue)
-            data['previousPrice'] = item.find('span', attrs = {'class': 'cash-previous-price-value'}).text.replace(".", "").replace("$", "")
-            data['offerPrice'] = item.find('div', attrs = {'class': 'cash-price'}).text.replace(".", "").replace("$", "")
+            data['code'] = item.find('a').get('href').split("/")[-1]
+            data['name'] = item.find('div', attrs = {'class': 'name'}).text
+            data['url'] = 'http://www.spdigital.cl' + item.find('a').get('href')
+            data['image'] = item.find('img', attrs = {'class': 'small-image'}).get('src')
+            data['discount'] = str(percentageValue)
+            data['previous_price'] = item.find('span', attrs = {'class': 'cash-previous-price-value'}).text.replace(".", "").replace("$", "")
+            data['offer_price'] = item.find('div', attrs = {'class': 'cash-price'}).text.replace(".", "").replace("$", "")
+            data['datetime'] = str(datetime.datetime.now())
             products.append(data)
             storeProduct(data)
             index += 1
@@ -45,21 +49,18 @@ def searchOffer(pageNumber):
     return json_data
 
 
-
-
 ########################################################
 ####################### MAIN ###########################
 ########################################################
-
 params = len(sys.argv)
 
 if params == 1:
+    results = open("products.txt", "w")
     for i in range(1, 115):
         data = searchOffer(i)
-        results = open("products.txt", "a")
         results.write(data)
         results.write("\n")
-        results.close()
+    results.close()
 
 elif params == 2:
     data = searchOffer(sys.argv[1])
