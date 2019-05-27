@@ -17,7 +17,7 @@ def storeProduct(data):
     # extracting data in json format 
     response = r.text
 
-    print(response)
+    #print(response)
 
 
 def searchOffer(pageNumber):
@@ -57,6 +57,7 @@ params = len(sys.argv)
 if params == 1:
     results = open("products.txt", "w")
     for i in range(1, 115):
+        print("Fetch Page " + str(i))
         data = searchOffer(i)
         results.write(data)
         results.write("\n")

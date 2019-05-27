@@ -29,7 +29,7 @@
             $adds = "";
 
             if (isset($_GET['discount'])) {
-                $adds .= " where productPercentage >= " . $_GET['discount'];
+                $adds .= " where discount >= " . $_GET['discount'];
             }
 
             if (isset($_GET['order'])) {
@@ -82,7 +82,6 @@
             $input['created_at'] = $input['datetime'];
             $input['updated_at'] = $input['datetime'];
             unset($input['datetime']);
-            print_r($input);
 
             $sql = "INSERT INTO products
                (code, name, url, image, discount, previous_price, offer_price, created_at, updated_at)
