@@ -4,7 +4,7 @@
     $db =  connect($db);
 
     /*
-      listar todos los posts o solo uno
+      listar todos los productos o solo uno
      */
     if ($_SERVER['REQUEST_METHOD'] == 'GET')
     {
@@ -43,7 +43,7 @@
             }
 
 
-            //Mostrar lista de post
+            //Mostrar lista de productos
             $sql = $db->prepare("SELECT * FROM products" . $adds);
             $sql->execute();
             $sql->setFetchMode(PDO::FETCH_ASSOC);
@@ -53,7 +53,7 @@
       }
     }
 
-    // Crear un nuevo post
+    // Crear un nuevo producto
     if ($_SERVER['REQUEST_METHOD'] == 'POST')
     {
         $input = $_REQUEST;
@@ -77,7 +77,7 @@
        }
     }
 
-    //Borrar
+    //Borrar producto
     if ($_SERVER['REQUEST_METHOD'] == 'DELETE')
     {
       $id = $_GET['id'];
@@ -88,7 +88,7 @@
       exit();
     }
 
-    //Actualizar
+    //Actualizar producto
     if ($_SERVER['REQUEST_METHOD'] == 'PUT')
     {
         $input = $_GET;
